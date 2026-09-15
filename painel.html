@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MathClass - Desempenho dos Estudantes</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="pagina-painel">
+
+    <div class="painel-container">
+
+        <header class="cabecalho">
+            <div>
+                <h1>MathClass</h1>
+                <p>Registro de Desempenho em Matemática</p>
+            </div>
+
+            <button class="btn-sair" onclick="sair()">Sair</button>
+        </header>
+
+        <section class="card">
+
+            <h2>Cadastrar desempenho</h2>
+
+            <form id="formAluno">
+
+                <label>Nome do estudante:</label>
+                <input type="text" id="nome" placeholder="Ex.: Ana">
+
+                <label>Conteúdo:</label>
+                <select id="conteudo">
+                    <option value="">Selecione um conteúdo</option>
+                    <option>Função Exponencial</option>
+                    <option>Logaritmos</option>
+                    <option>Geometria</option>
+                    <option>Estatística</option>
+                    <option>Probabilidade</option>
+                </select>
+
+                <label>Nota:</label>
+                <input type="number" id="nota"
+                       min="0" max="10" step="0.1"
+                       placeholder="Ex.: 8.5">
+
+                <button type="button"
+                        class="btn-salvar"
+                        onclick="salvarRegistro()">
+                    Cadastrar
+                </button>
+
+            </form>
+
+        </section>
+
+        <section class="card">
+
+            <h2>Desempenho dos estudantes</h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Estudante</th>
+                        <th>Conteúdo</th>
+                        <th>Nota</th>
+                        <th>Situação</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+
+                <tbody id="tabelaAlunos">
+                </tbody>
+
+            </table>
+
+        </section>
+
+    </div>
+
+    <script src="crud.js"></script>
+
+</body>
+
+</html>
