@@ -3,7 +3,7 @@
 // ========================================
 
 // URL do projeto Supabase
-const SUPABASE_URL = "https://qzccppeyjjcnjwztnjuj.supabase.co";
+const SUPABASE_URL = "https://qzccppeyjjncjwztnjuj.supabase.co";
 
 // Chave pública do projeto Supabase
 const SUPABASE_KEY = "sb_publishable_f3m-X8prh_THrSkOWcWfiA_GeiXsNin";
