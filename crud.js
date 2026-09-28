@@ -1,23 +1,30 @@
 // ========================================
-// BANCO DE DADOS - LOCALSTORAGE
+// BANCO DE DADOS - SUPABASE
 // ========================================
 
-// Busca os registros já salvos.
-// Se não existir nenhum, começa com uma lista vazia.
-let registros = JSON.parse(localStorage.getItem("registrosMatematica")) || [];
+// URL do projeto Supabase
+const SUPABASE_URL = "https://qzccppeyjjcnjwztnjuj.supabase.co";
 
-// Guarda qual registro está sendo editado.
-// -1 significa que nenhum está sendo editado.
-let indiceEdicao = -1;
+// Chave pública do projeto Supabase
+const SUPABASE_KEY = "sb_publishable_f3m-X8prh_THrSkOWcWfiA_GeiXsNin";
 
+// Conexão com o Supabase
+const banco = supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+);
+
+// Guarda o ID do registro que está sendo editado.
+// null significa que nenhum registro está sendo editado.
+let idEdicao = null;
 
 // ========================================
-// INSERT - CADASTRAR
+// INSERT / UPDATE - SALVAR
 // ========================================
 
-function salvarRegistro() {
+async function salvarRegistro() {
 
-    const nome = document.getElementById("nome").value;
+    const nome = document.getElementById("nome").value.trim();
     const conteudo = document.getElementById("conteudo").value;
     const nota = parseFloat(document.getElementById("nota").value);
 
@@ -37,31 +44,54 @@ function salvarRegistro() {
     const situacao = nota >= 6 ? "Aprovado" : "Recuperação";
 
     const registro = {
-        nome: nome,
+        estudante: nome,
         conteudo: conteudo,
         nota: nota,
         situacao: situacao
     };
 
-    // Se não estiver editando, cadastra um novo
-    if (indiceEdicao === -1) {
+    // ========================================
+    // INSERT - NOVO REGISTRO
+    // ========================================
 
-        registros.push(registro);
+    if (idEdicao === null) {
+
+        const { error } = await banco
+            .from("desempenhos")
+            .insert([registro]);
+
+        if (error) {
+            console.error(error);
+            alert("Erro ao cadastrar o registro.");
+            return;
+        }
+
+        alert("Registro cadastrado com sucesso!");
 
     } else {
 
-        // UPDATE - altera um registro existente
-        registros[indiceEdicao] = registro;
-        indiceEdicao = -1;
+        // ========================================
+        // UPDATE - ALTERAR REGISTRO
+        // ========================================
+
+        const { error } = await banco
+            .from("desempenhos")
+            .update(registro)
+            .eq("id", idEdicao);
+
+        if (error) {
+            console.error(error);
+            alert("Erro ao atualizar o registro.");
+            return;
+        }
+
+        alert("Registro atualizado com sucesso!");
+
+        idEdicao = null;
     }
 
-    localStorage.setItem(
-        "registrosMatematica",
-        JSON.stringify(registros)
-    );
-
     limparFormulario();
-    listarRegistros();
+    await listarRegistros();
 }
 
 
@@ -69,27 +99,44 @@ function salvarRegistro() {
 // SELECT - LISTAR
 // ========================================
 
-function listarRegistros() {
+async function listarRegistros() {
 
     const tabela = document.getElementById("tabelaAlunos");
 
     tabela.innerHTML = "";
 
-    registros.forEach((registro, indice) => {
+    const { data, error } = await banco
+        .from("desempenhos")
+        .select("*")
+        .order("id", { ascending: true });
+
+    if (error) {
+        console.error(error);
+        tabela.innerHTML = `
+            <tr>
+                <td colspan="5">
+                    Erro ao carregar os registros.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    data.forEach((registro) => {
 
         const linha = document.createElement("tr");
 
         linha.innerHTML = `
-            <td>${registro.nome}</td>
+            <td>${registro.estudante}</td>
             <td>${registro.conteudo}</td>
-            <td>${registro.nota.toFixed(1)}</td>
+            <td>${Number(registro.nota).toFixed(1)}</td>
             <td>${registro.situacao}</td>
             <td>
-                <button onclick="editarRegistro(${indice})">
+                <button onclick="editarRegistro(${registro.id})">
                     Editar
                 </button>
 
-                <button onclick="excluirRegistro(${indice})">
+                <button onclick="excluirRegistro(${registro.id})">
                     Excluir
                 </button>
             </td>
@@ -101,18 +148,33 @@ function listarRegistros() {
 
 
 // ========================================
-// UPDATE - EDITAR
+// UPDATE - PREPARAR EDIÇÃO
 // ========================================
 
-function editarRegistro(indice) {
+async function editarRegistro(id) {
 
-    const registro = registros[indice];
+    const { data, error } = await banco
+        .from("desempenhos")
+        .select("*")
+        .eq("id", id)
+        .single();
 
-    document.getElementById("nome").value = registro.nome;
-    document.getElementById("conteudo").value = registro.conteudo;
-    document.getElementById("nota").value = registro.nota;
+    if (error) {
+        console.error(error);
+        alert("Erro ao buscar o registro.");
+        return;
+    }
 
-    indiceEdicao = indice;
+    document.getElementById("nome").value =
+        data.estudante;
+
+    document.getElementById("conteudo").value =
+        data.conteudo;
+
+    document.getElementById("nota").value =
+        data.nota;
+
+    idEdicao = data.id;
 
     document.querySelector(".btn-salvar").textContent =
         "Salvar alteração";
@@ -123,23 +185,30 @@ function editarRegistro(indice) {
 // DELETE - EXCLUIR
 // ========================================
 
-function excluirRegistro(indice) {
+async function excluirRegistro(id) {
 
     const confirmar = confirm(
         "Deseja realmente excluir este registro?"
     );
 
-    if (confirmar) {
-
-        registros.splice(indice, 1);
-
-        localStorage.setItem(
-            "registrosMatematica",
-            JSON.stringify(registros)
-        );
-
-        listarRegistros();
+    if (!confirmar) {
+        return;
     }
+
+    const { error } = await banco
+        .from("desempenhos")
+        .delete()
+        .eq("id", id);
+
+    if (error) {
+        console.error(error);
+        alert("Erro ao excluir o registro.");
+        return;
+    }
+
+    alert("Registro excluído com sucesso!");
+
+    await listarRegistros();
 }
 
 
@@ -155,6 +224,8 @@ function limparFormulario() {
 
     document.querySelector(".btn-salvar").textContent =
         "Cadastrar";
+
+    idEdicao = null;
 }
 
 
@@ -164,11 +235,16 @@ function limparFormulario() {
 
 function sair() {
 
+    // Mantemos o login atual do MathClass.
     localStorage.setItem("logado", "false");
 
     window.location.href = "index.html";
 }
 
 
-// Mostra os registros quando a página abrir
+// ========================================
+// CARREGAR REGISTROS
+// ========================================
+
+// Busca os registros do Supabase quando a página abrir.
 listarRegistros();
